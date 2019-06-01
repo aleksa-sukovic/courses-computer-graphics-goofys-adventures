@@ -1,0 +1,9 @@
+version: '3'
+services:
+    love-lua:
+        build:
+            context: ..
+            dockerfile: docker/Dockerfile
+        command: tail -F /bin/bash
+        volumes:
+            - ../app:/usr/src/app

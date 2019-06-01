@@ -1,0 +1,14 @@
+{
+    "name": "Love2D",
+    "service": "love-lua",
+	"dockerComposeFile": "../docker/docker-compose.yml",
+	"workspaceFolder": "/usr/src/app",
+
+	"extensions": [
+        "keyring.lua",
+		"bschulte.love"
+	],
+	"settings": {
+		"terminal.integrated.shell.linux": "/bin/bash"
+	}
+}
