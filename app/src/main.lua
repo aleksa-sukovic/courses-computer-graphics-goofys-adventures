@@ -49,7 +49,7 @@ function love.update(dt)
     end
 
     values.timer = values.timer + dt
-    if values.timer <= 0.1 then
+    if values.timer <= 0.2 then
         return
     end
 
