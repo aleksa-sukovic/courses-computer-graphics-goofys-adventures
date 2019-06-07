@@ -1,4 +1,8 @@
+
 local Quad = love.graphics.newQuad
+
+local ALT = require('plugins/advance-tiled-loader')
+ALT.Loader.path = "assets/maps/level_1/"
 
 function makeCharacter()
     character = {}
@@ -38,6 +42,9 @@ function setup()
 end
 
 function love.load()
+    love.graphics.setBackgroundColor(255, 153, 0)
+    map = ALT.Loader.load("level_1_map.tmx")
+
     character = makeCharacter()
     quads     = makeCharacterSprites()
     values    = setup()
@@ -85,5 +92,6 @@ function love.keyreleased(key)
 end
 
 function love.draw()
+    map:draw()
     love.graphics.draw(character.player[values.direction], quads[values.direction][values.iteration], character.x, character.y)
 end
