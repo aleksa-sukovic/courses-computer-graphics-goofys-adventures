@@ -5,7 +5,6 @@
 
     --- Bump  ---
     local bump = require 'plugins/bump/bump'
-    local world = bump.newWorld(32)
 
     --- Anim8 ---
     local anim8 = require 'plugins/anim8/anim8'
@@ -15,7 +14,9 @@
     -- World
     local tileWidth  = 16
     local tileHeight = 16
-    blocks = {} --- holds all the solid tiles
+    local world      = bump.newWorld(16)
+    local gravity    = 1000
+    local blocks     = {}
 
     --- Player
     playerSprite = love.graphics.newImage('assets/gripe/gripe.run_right.png')
@@ -51,11 +52,11 @@
 
     --- Loads a map from specified file
     function loadTileMap(path, mapName)
+        --- load map
         ALT.Loader.path = path
         map = ALT.Loader.load(mapName)
 
-        gravity = 1000
-
+        --- initialize tiles
         findSolidTiles(map)
 
         map.drawObjects = false
@@ -65,16 +66,16 @@
     function findSolidTiles(map)
         layer = map.layers['solid']
 
-        for tileX = 1, map.width do
-            for tileY = 1, map.height do
-                local tile = layer(tileX - 1, tileY - 1)
+        for tileX = 0, map.width do
+            for tileY = 0, map.height do
+                local tile = layer(tileX, tileY)
 
                 if tile then
                     local block = { 
-                        l = (tileX - 1) * 16,
-                        t = (tileY - 1) * 16,
-                        w = tileWidth,
-                        h = tileHeight
+                        l = (tileX) * 16,
+                        t = (tileY) * 16,
+                        w = tileWidth / 4,
+                        h = tileHeight / 4
                     }
 
                     blocks[#blocks + 1] = block
@@ -94,7 +95,7 @@
 --- Player Functions
 
     function spawnPlayer(x, y)
-        width = 32
+        width  = 32
         height = 32
 
         player = {
@@ -107,31 +108,31 @@
             direction = 'right'
         }
 
-        world:add(player, x, y - height, player.w, player.h)
+        world:add(player, x, y - height - 4, player.w, player.h)
     end
 
-    function playerMovement(dt)
+    function movePlayer(dt)
         --- Update player position and animation
         if love.keyboard.isDown('left') then
-            player.l = player.l - playerSpeed * dt
-
-            playAnimation = playerWalkleft
-
-            player.direction = 'left'
+            player.l, player.t = world:move(player, player.l - playerSpeed * dt, player.t)
+            playAnimation      = playerWalkleft
+            player.direction   = 'left'
         elseif love.keyboard.isDown('right') then
-            player.l = player.l + playerSpeed * dt
-
-            playAnimation = playerWalkRight
-
-            player.direction = 'right'
-        elseif player.direction == 'left' then
-            playAnimation = playerIdleLeft
+            player.l, player.t = world:move(player, player.l + playerSpeed * dt, player.t)
+            playAnimation      = playerWalkRight
+            player.direction   = 'right'
         else
-            playAnimation = playerIdleRight
+            if player.direction == 'left' then
+                playAnimation = playerIdleLeft 
+            else 
+                playAnimation = playerIdleRight
+            end
         end
-
         playAnimation:update(dt)
-        if (player.t > map.height * 16) then Die() end
+        
+        --- apply gravity to player
+        player.velocity = player.velocity + gravity * dt / 2
+        player.l, player.t = world:move(player, player.l, player.t + (player.velocity * dt))
     end
 
 
@@ -157,7 +158,7 @@ function love.load()
 end
 
 function love.update(dt)
-    playerMovement(dt)
+    movePlayer(dt)
 end
 
 function love.draw()
