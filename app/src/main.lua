@@ -1,97 +1,166 @@
+--- Import libraries
 
-local Quad = love.graphics.newQuad
+    --- Advanced Tield Loader  ---
+    local ALT = require('plugins/advance-tiled-loader')
 
-local ALT = require('plugins/advance-tiled-loader')
-ALT.Loader.path = "assets/maps/level_1/"
+    --- Bump  ---
+    local bump = require 'plugins/bump/bump'
+    local world = bump.newWorld(32)
 
-function makeCharacter()
-    character = {}
-    character.player = {}
-    character.player['left'] = love.graphics.newImage('assets/gripe/gripe.run_left.png')
-    character.player['right'] = love.graphics.newImage('assets/gripe/gripe.run_right.png')
+    --- Anim8 ---
+    local anim8 = require 'plugins/anim8/anim8'
 
-    character.x = 50
-    character.y = 50
+--- Global Variables
 
-    return character
-end
+    -- World
+    local tileWidth  = 16
+    local tileHeight = 16
+    blocks = {} --- holds all the solid tiles
 
-function makeCharacterSprites()
-    quads = {}
-    quads['left'] = {}
-    quads['right'] = {}
+    --- Player
+    playerSprite = love.graphics.newImage('assets/gripe/gripe.run_right.png')
+    playerSpeed  = 100
 
-    for i = 1, 8 do
-        quads['left'][i] = Quad((i - 1) * 32, 0, 32, 32, 256, 32)
-        quads['right'][i] = Quad((i - 1) * 32, 0, 32, 32, 256, 32)
+    --- Animations
+
+        --- Player
+        local a8 = anim8.newGrid(32, 32, playerSprite:getWidth(), playerSprite:getHeight())
+
+            --- Walk Right
+            playerWalkRight = anim8.newAnimation(a8('1-8', 1), 0.1)
+
+            -- Walk Left
+            playerWalkleft  = anim8.newAnimation(a8('1-8', 1), 0.1)
+            playerWalkleft:flipH()
+
+            --- Jump Right
+            playerJumpRight = anim8.newAnimation(a8(4, 1), 0.1)
+
+            --- Jump Left
+            playerJumpLeft  = anim8.newAnimation(a8(4, 1), 0.1)
+            playerJumpLeft:flipH()
+
+            -- Idle Right
+            playerIdleRight = anim8.newAnimation(a8(1, 1), 0.1)
+
+            -- Idle Left
+            playerIdleLeft  = anim8.newAnimation(a8(1, 1), 0.1)
+            playerIdleLeft:flipH()
+
+-- Map Functions
+
+    --- Loads a map from specified file
+    function loadTileMap(path, mapName)
+        ALT.Loader.path = path
+        map = ALT.Loader.load(mapName)
+
+        gravity = 1000
+
+        findSolidTiles(map)
+
+        map.drawObjects = false
     end
 
-    return quads
+    --- Load every tile that should be solid
+    function findSolidTiles(map)
+        layer = map.layers['solid']
+
+        for tileX = 1, map.width do
+            for tileY = 1, map.height do
+                local tile = layer(tileX - 1, tileY - 1)
+
+                if tile then
+                    local block = { 
+                        l = (tileX - 1) * 16,
+                        t = (tileY - 1) * 16,
+                        w = tileWidth,
+                        h = tileHeight
+                    }
+
+                    blocks[#blocks + 1] = block
+                    world:add(block, block.l, block.t, block.w, block.h)
+                end
+            end
+        end
+
+        for i, obj in pairs( map('characters').objects ) do
+            if obj.type == 'player' then spawnPlayer(obj.x, obj.y) end
+        end
+
+        map.drawObjects = false
+
+    end
+
+--- Player Functions
+
+    function spawnPlayer(x, y)
+        width = 32
+        height = 32
+
+        player = {
+            name = 'Goofy',
+            l = x,
+            t = y - height,
+            w = width,
+            h = height,
+            velocity = 0,
+            direction = 'right'
+        }
+
+        world:add(player, x, y - height, player.w, player.h)
+    end
+
+    function playerMovement(dt)
+        --- Update player position and animation
+        if love.keyboard.isDown('left') then
+            player.l = player.l - playerSpeed * dt
+
+            playAnimation = playerWalkleft
+
+            player.direction = 'left'
+        elseif love.keyboard.isDown('right') then
+            player.l = player.l + playerSpeed * dt
+
+            playAnimation = playerWalkRight
+
+            player.direction = 'right'
+        elseif player.direction == 'left' then
+            playAnimation = playerIdleLeft
+        else
+            playAnimation = playerIdleRight
+        end
+
+        playAnimation:update(dt)
+        if (player.t > map.height * 16) then Die() end
+    end
+
+
+function love.keyreleased(k)
+    if k == 'w' then isJumping = false end
 end
 
-function setup()
-    values = {}
+function love.keypressed(k)
+    if k == 'w' then isJumping = true end
+end
 
-    values['direction'] = 'right'
-    values['iteration'] = 1
-    values['max_iteration'] = 8
-    values['idle'] = true
-    values['timer'] = 0.1
+function Die()
+    player.l = 32
+    player.t = 32
+end
 
-    return values
+function drawPlayer()
+    playAnimation:draw(playerSprite, player.l, player.t)
 end
 
 function love.load()
-    love.graphics.setBackgroundColor(255, 153, 0)
-    map = ALT.Loader.load("level_1_map.tmx")
-
-    character = makeCharacter()
-    quads     = makeCharacterSprites()
-    values    = setup()
+    loadTileMap('assets/maps/level_1/', 'level_1_map.tmx')
 end
 
 function love.update(dt)
-    if values.idle == true then
-        return
-    end
-
-    values.timer = values.timer + dt
-    if values.timer <= 0.2 then
-        return
-    end
-
-    values.timer = 0.1
-    values.iteration = values.iteration + 1
-
-    if love.keyboard.isDown('right') then
-        character.x = character.x + 5
-    end
-
-    if love.keyboard.isDown('left') then
-        character.x = character.x - 5
-    end
-
-    if values.iteration > values.max_iteration then
-        values.iteration = 1
-    end
-end
-
-function love.keypressed(key)
-    if quads[key] then
-        values.direction = key
-        values.idle = false
-    end
-end
-
-function love.keyreleased(key)
-    if quads[key] and values.direction == key then
-        values.idle = true
-        values.iteration = 1
-        values.direction = 'right'
-    end
+    playerMovement(dt)
 end
 
 function love.draw()
     map:draw()
-    love.graphics.draw(character.player[values.direction], quads[values.direction][values.iteration], character.x, character.y)
+    drawPlayer()
 end
