@@ -19,8 +19,11 @@
     local blocks     = {}
 
     --- Player
-    playerSprite = love.graphics.newImage('assets/gripe/gripe.run_right.png')
-    playerSpeed  = 100
+    playerSprite    = love.graphics.newImage('assets/gripe/gripe.run_right.png')
+    playerStartL    = 0
+    playerStartT    = 0
+    playerDimension = 32
+    playerSpeed     = 100
 
     --- Animations
 
@@ -66,49 +69,42 @@
     function findSolidTiles(map)
         layer = map.layers['solid']
 
-        for tileX = 0, map.width do
-            for tileY = 0, map.height do
-                local tile = layer(tileX, tileY)
+        for x, y, tile in layer:iterate() do
+            local block = { 
+                l = x * 16,
+                t = y * 16,
+                w = tileWidth / 4,
+                h = tileHeight / 4
+            }
 
-                if tile then
-                    local block = { 
-                        l = (tileX) * 16,
-                        t = (tileY) * 16,
-                        w = tileWidth / 4,
-                        h = tileHeight / 4
-                    }
-
-                    blocks[#blocks + 1] = block
-                    world:add(block, block.l, block.t, block.w, block.h)
-                end
-            end
+            blocks[#blocks + 1] = block
+            world:add(block, block.l, block.t, block.w, block.h)
         end
 
         for i, obj in pairs( map('characters').objects ) do
-            if obj.type == 'player' then spawnPlayer(obj.x, obj.y) end
+            if obj.type == 'player' then 
+                playerStartL = obj.x
+                playerStartT = obj.y
+
+                spawnPlayer(obj.x, obj.y)
+            end
         end
-
-        map.drawObjects = false
-
     end
 
 --- Player Functions
 
     function spawnPlayer(x, y)
-        width  = 32
-        height = 32
-
         player = {
             name = 'Goofy',
             l = x,
-            t = y - height,
-            w = width,
-            h = height,
+            t = y,
+            w = playerDimension,
+            h = playerDimension,
             velocity = 0,
             direction = 'right'
         }
 
-        world:add(player, x, y - height - 4, player.w, player.h)
+        world:add(player, x, y, player.w, player.h)
     end
 
     function movePlayer(dt)
@@ -133,6 +129,9 @@
         --- apply gravity to player
         player.velocity = player.velocity + gravity * dt / 2
         player.l, player.t = world:move(player, player.l, player.t + (player.velocity * dt))
+
+        --- die if player falls of map
+        if (player.t > map.height * tileHeight) then Die() end
     end
 
 
@@ -145,8 +144,9 @@ function love.keypressed(k)
 end
 
 function Die()
-    player.l = 32
-    player.t = 32
+    player.l = playerStartL
+    player.t = playerStartT
+    world:update(player, playerStartL, playerStartT)
 end
 
 function drawPlayer()
