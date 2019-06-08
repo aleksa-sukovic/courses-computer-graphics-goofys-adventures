@@ -23,6 +23,7 @@
     local PLAYER_DIMENSION   = 32
     local PLAYER_SPEED       = 100
     local PLAYER_JUMP_AMOUNT = 4
+    local PLAYER_LIVES       = 3
 
     --- Spikes
     local SPIKES      = {}
@@ -142,7 +143,8 @@
             velocity     = 0,
             acceleration = 0,
             direction    = 'right',
-            score        = 0
+            score        = 0,
+            lives        = PLAYER_LIVES
         }
 
         WORLD:add(player, player.l, player.t, player.w, player.h)
@@ -247,9 +249,19 @@
     function die()
         player.l     = player.startL
         player.t     = player.startT
+        player.lives = player.lives - 1
         player.score = 0
     
         WORLD:update(player, player.l, player.t)
+
+        if player.lives = 0 then
+            gameOver()
+        end
+    end
+
+    --- Callback function after player loses all of their lives
+    function gameOver()
+        print('Game Over')
     end
 
     --- Draws player object 
