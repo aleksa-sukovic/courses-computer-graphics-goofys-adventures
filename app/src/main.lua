@@ -19,44 +19,57 @@
     local WORLD            = bump.newWorld(8)
 
     --- Player
-    local PLAYER_SPRITE      = love.graphics.newImage('assets/gripe/gripe.run_right.png')
+    local PLAYER_SPRITE      = love.graphics.newImage('assets/gripe/gripe.png')
     local PLAYER_DIMENSION   = 32
     local PLAYER_SPEED       = 100
     local PLAYER_JUMP_AMOUNT = 4
 
     --- Spikes
-    local SPIKES = {}
+    local SPIKES      = {}
     local SPIKE_WIDTH = 16
     local SPIKE_HEIGHT = 16
 
     --- Goal
     local goal = {}
 
+    --- Coin
+    local COIN_SPRITE = love.graphics.newImage('assets/coin/coin.png')
+    local COIN_WIDTH  = 16
+    local COIN_HEIGHT = 16
+    local COINS       = {}
+
     --- Animations
 
         --- Player
-        local a8 = anim8.newGrid(32, 32, PLAYER_SPRITE:getWidth(), PLAYER_SPRITE:getHeight())
+        local playerGrid = anim8.newGrid(32, 32, PLAYER_SPRITE:getWidth(), PLAYER_SPRITE:getHeight())
 
             --- Walk Right
-            playerWalkRight = anim8.newAnimation(a8('1-8', 1), 0.1)
+            playerWalkRight = anim8.newAnimation(playerGrid('1-8', 1), 0.1)
 
             -- Walk Left
-            playerWalkLeft  = anim8.newAnimation(a8('1-8', 1), 0.1)
+            playerWalkLeft  = anim8.newAnimation(playerGrid('1-8', 1), 0.1)
             playerWalkLeft:flipH()
 
             --- Jump Right
-            playerJumpRight = anim8.newAnimation(a8(4, 1), 0.1)
+            playerJumpRight = anim8.newAnimation(playerGrid(4, 1), 0.1)
 
             --- Jump Left
-            playerJumpLeft  = anim8.newAnimation(a8(4, 1), 0.1)
+            playerJumpLeft  = anim8.newAnimation(playerGrid(4, 1), 0.1)
             playerJumpLeft:flipH()
 
             -- Idle Right
-            playerIdleRight = anim8.newAnimation(a8(1, 1), 0.1)
+            playerIdleRight = anim8.newAnimation(playerGrid(1, 1), 0.1)
 
             -- Idle Left
-            playerIdleLeft  = anim8.newAnimation(a8(1, 1), 0.1)
+            playerIdleLeft  = anim8.newAnimation(playerGrid(1, 1), 0.1)
             playerIdleLeft:flipH()
+
+        --- Coin
+        local coinGrid = anim8.newGrid(16, 16, COIN_SPRITE:getWidth(), COIN_SPRITE:getHeight())
+
+            --- Coin Spin
+            coinSpinAnimation = anim8.newAnimation(coinGrid('1-8', 1), 0.1)
+
 
 -- Map Functions
 
@@ -97,6 +110,7 @@
             if obj.type == 'player' then spawnPlayer(obj.x, obj.y) end
             if obj.type == 'spike' then spawnSpike(obj.x, obj.y) end
             if obj.type == 'goal' then spawnGoal(obj.x, obj.y) end
+            if obj.type == 'coin' then spawnCoin(obj.x, obj.y) end
         end
     end
 
@@ -114,7 +128,8 @@
             h            = PLAYER_DIMENSION,
             velocity     = 0,
             acceleration = 0,
-            direction    = 'right'
+            direction    = 'right',
+            score        = 0
         }
 
         WORLD:add(player, player.l, player.t, player.w, player.h)
@@ -210,14 +225,16 @@
     function handlePlayerCollisions(cols, len, direction)
         for i = 1, len do
             if cols[i].other.type == 'spike' and direction == 'vertical' then die()
-            elseif cols[i].other.type == 'goal' then nextLevel() end
+            elseif cols[i].other.type == 'goal' then nextLevel()
+            elseif cols[i].other.type == 'coin' then catchCoin(cols[i].other) end
         end
     end
 
     --- Callback function after player has lost one of their lifes
     function die()
-        player.l = player.startL
-        player.t = player.startT
+        player.l     = player.startL
+        player.t     = player.startT
+        player.score = 0
     
         WORLD:update(player, player.l, player.t)
     end
@@ -246,7 +263,7 @@
 
 --- Goal Functions
 
-    --- Adds goal object to World
+    --- Adds goal object to world
     function spawnGoal(x, y)
         goal = {
             l = x,
@@ -259,10 +276,65 @@
         WORLD:add(goal, goal.l, goal.t, goal.w, goal.h)
     end
 
+--- Coin Functions
+
+    --- Adds coin object to world
+    function spawnCoin(x, y)
+        id = #COINS + 1
+        
+        COINS[id] = {
+            l = x,
+            t = y - COIN_HEIGHT,
+            w = COIN_WIDTH / 4,
+            h = COIN_HEIGHT / 4,
+            type = 'coin',
+            id = id,
+            caught = false
+        }
+
+        WORLD:add(COINS[id], COINS[id].l, COINS[id].t, COINS[id].w, COINS[id].h)
+    end
+
+    --- Catches given coin, increases player score and removes coin from world
+    function catchCoin(coin)
+        coin.caught = true
+        player.score = player.score + 1
+        WORLD:remove(coin)
+    end
+
+    --- Checks if all coins are caught
+    function allCoinsCaught()
+        for i = 1, #COINS do
+            if not COINS[i].caught then return false end
+        end
+
+        return true
+    end
+
+    --- Updates coin
+    function updateCoins(dt)
+        coinSpinAnimation:update(dt)
+    end
+
+    -- Draws all coins
+    function drawCoins()
+        for i = 1, #COINS do
+            if not COINS[i].caught then
+                coinSpinAnimation:draw(COIN_SPRITE, COINS[i].l, COINS[i].t)
+            end
+        end
+    end
+
 --- GUI Functions
+
+    --- Advances to next level
     function nextLevel()
-        print('Advance to next level.')
-        die()
+        if allCoinsCaught() then
+            print('Advance to next level.')
+            die()
+        else
+            print('Please collect all coins.')
+        end
     end
 
 function love.keypressed(k)
@@ -278,9 +350,11 @@ end
 
 function love.update(dt)
     updatePlayer(dt)
+    updateCoins(dt)
 end
 
 function love.draw()
     map:draw()
     drawPlayer()
+    drawCoins()
 end
