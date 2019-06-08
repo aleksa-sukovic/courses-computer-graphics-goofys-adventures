@@ -16,7 +16,7 @@
     local TILE_HEIGHT      = 16
     local GRAVITY          = 1.5
     local MAX_ACCELERATION = 10
-    local WORLD            = bump.newWorld(16)
+    local WORLD            = bump.newWorld(8)
 
     --- Player
     local PLAYER_SPRITE      = love.graphics.newImage('assets/gripe/gripe.run_right.png')
@@ -63,7 +63,7 @@
         initializeTiles(map)
 
         --- spawn every object
-        spawnObjects()
+        spawnObjects(map)
     end
 
     --- Load every tile that should be solid
@@ -83,7 +83,7 @@
     end
 
     --- Spawns every object found in 'characters' layer
-    function spawnObjects()
+    function spawnObjects(map)
         for i, obj in pairs( map('characters').objects ) do
             if obj.type == 'player' then spawnPlayer(obj.x, obj.y) end
         end
@@ -121,7 +121,7 @@
             playAnimation = idlePlayer()
         end
 
-        -- playAnimation:update(dt)
+        playAnimation:update(dt)
         
         --- apply gravity and acceleration to player if its in air
         if playerOnGround() then
@@ -139,7 +139,7 @@
             player.acceleration = 0
             player.velocity     = 0
         else
-            --- handle coin collision
+            --- handle other collisions
         end
 
         --- die if player falls of map
