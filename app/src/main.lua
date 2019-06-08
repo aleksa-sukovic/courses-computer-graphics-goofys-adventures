@@ -24,6 +24,14 @@
     local PLAYER_SPEED       = 100
     local PLAYER_JUMP_AMOUNT = 4
 
+    --- Spikes
+    local SPIKES = {}
+    local SPIKE_WIDTH = 16
+    local SPIKE_HEIGHT = 16
+
+    --- Goal
+    local goal = {}
+
     --- Animations
 
         --- Player
@@ -87,6 +95,8 @@
     function spawnObjects(map)
         for i, obj in pairs( map('characters').objects ) do
             if obj.type == 'player' then spawnPlayer(obj.x, obj.y) end
+            if obj.type == 'spike' then spawnSpike(obj.x, obj.y) end
+            if obj.type == 'goal' then spawnGoal(obj.x, obj.y) end
         end
     end
 
@@ -115,46 +125,47 @@
 
         --- Update player position and animation
         if love.keyboard.isDown('left') or love.keyboard.isDown('a') then
-            playAnimation = movePlayer('left', dt)
+            playAnimation = playerWalk('left', dt)
         elseif love.keyboard.isDown('right') or love.keyboard.isDown('d') then
-            playAnimation = movePlayer('right', dt)
+            playAnimation = playerWalk('right', dt)
         else
             playAnimation = idlePlayer()
         end
 
         playAnimation:update(dt)
         
-        --- apply gravity and acceleration to player if its in air
-        if playerOnGround() then
-           player.acceleration = 0
-           player.velocity     = 0 
-        else
-            player.velocity     = player.velocity + dt * GRAVITY
-            player.acceleration = player.acceleration + player.velocity
-        end
+        --- Applies gravity and acceleration to player if its in air
+        applyWorldForces(dt);
 
-        player.l, player.t, collisions, len = WORLD:move(player, player.l, player.t + player.acceleration)
+        --- Move player according to current acceleration
+        player.l, player.t, cols, len = WORLD:move(player, player.l, player.t + player.acceleration)
 
         --- if player is in air and collision occured, make player drop
         if not playerOnGround() and len > 0 then
             player.acceleration = 0
             player.velocity     = 0
-        else
-            --- handle other collisions
         end
 
+        --- Handle collisions
+        handlePlayerCollisions(cols, len, 'vertical')
+
         --- die if player falls of map
-        if (player.t > map.height * TILE_HEIGHT) then Die() end
+        if (player.t > map.height * TILE_HEIGHT) then die() end
     end
 
-    function movePlayer(direction, dt)
+    --- Moves player left or right depending on direction passed
+        --- direction: Direction in which player wants to move ['left', 'right']
+        --- dt: differenct in time between last frame and this one
+    function playerWalk(direction, dt)
         --- get direction
         local dir =  -1
         if direction == 'right' then dir = 1 end
 
         --- move player
-        player.l, player.t = WORLD:move(player, player.l + PLAYER_SPEED * dt * dir, player.t)
+        player.l, player.t, cols, len = WORLD:move(player, player.l + PLAYER_SPEED * dt * dir, player.t)
         player.direction   = direction
+
+        handlePlayerCollisions(cols, len, 'horizontal')
 
         --- return animation
         if player.direction == 'right' then return playerWalkRight else return playerWalkLeft end
@@ -169,13 +180,89 @@
         end
     end
 
+    --- Applies neccessary forces to player object
+        -- Player acceleration and velocity are 0 if player is standing on ground
+        -- Player acceleration is increased by velocity in each frame
+        -- Player velocity is increased by dt times gravity, where dt is difference in time between last frame and this one
+    function applyWorldForces(dt)
+        if playerOnGround() then
+            player.acceleration = 0
+            player.velocity     = 0 
+         else
+             player.velocity     = player.velocity + dt * GRAVITY
+             player.acceleration = player.acceleration + player.velocity
+         end
+    end
+
     --- Determines if player is currently on ground
     function playerOnGround()
         goalY = player.t + player.acceleration
 
-        actualX, actualY = WORLD:check(player, player.l, goalY)
+        actualX, actualY, cols, len = WORLD:check(player, player.l, goalY)
 
         if actualY == goalY then return false else return true end
+    end
+
+    --- Handles collisions that occured with player
+        -- cols: array of collisons that occured
+        -- len: number of collisions that occured (len = #cols)
+        -- direction: direction in which movement was made ['vertical', 'horizonal'] used for more precise detection
+    function handlePlayerCollisions(cols, len, direction)
+        for i = 1, len do
+            if cols[i].other.type == 'spike' and direction == 'vertical' then die()
+            elseif cols[i].other.type == 'goal' then nextLevel() end
+        end
+    end
+
+    --- Callback function after player has lost one of their lifes
+    function die()
+        player.l = player.startL
+        player.t = player.startT
+    
+        WORLD:update(player, player.l, player.t)
+    end
+
+    --- Draws player object 
+    function drawPlayer()
+        playAnimation:draw(PLAYER_SPRITE, player.l, player.t)
+    end
+
+--- Spikes Functions
+
+    --- Adds spikes to World
+    function spawnSpike(x, y)
+        local id = #SPIKES + 1
+        
+        SPIKES[id] = {
+            l = x,
+            t = y,
+            w = SPIKE_WIDTH / 4,
+            h = SPIKE_HEIGHT / 4,
+            type = 'spike'
+        }
+
+        WORLD:add(SPIKES[id], SPIKES[id].l, SPIKES[id].t, SPIKES[id].w, SPIKES[id].h)
+    end
+
+--- Goal Functions
+
+    --- Adds goal object to World
+    function spawnGoal(x, y)
+        goal = {
+            l = x,
+            t = y,
+            w = 16,
+            h = 80,
+            type = 'goal'
+        }
+
+        WORLD:add(goal, goal.l, goal.t, goal.w, goal.h)
+    end
+
+--- GUI Functions
+    function nextLevel()
+        print('Advance to next level.')
+        die()
     end
 
 function love.keypressed(k)
@@ -183,17 +270,6 @@ function love.keypressed(k)
         player.velocity = 0
         player.acceleration = -PLAYER_JUMP_AMOUNT
     end
-end
-
-function Die()
-    player.l = player.startL
-    player.t = player.startT
-
-    WORLD:update(player, player.l, player.t)
-end
-
-function drawPlayer()
-    playAnimation:draw(PLAYER_SPRITE, player.l, player.t)
 end
 
 function love.load()
