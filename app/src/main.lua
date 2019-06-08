@@ -366,7 +366,7 @@
             if (PLAYER_LEVEL + 1) % 2 == 0 then
                 loadTileMap('assets/maps/level_1/')
             else
-                loadTileMap('assets/maps/level_1/')
+                loadTileMap('assets/maps/level_2/')
             end
         end
     end
