@@ -254,7 +254,7 @@
     
         WORLD:update(player, player.l, player.t)
 
-        if player.lives = 0 then
+        if player.lives == 0 then
             gameOver()
         end
     end
