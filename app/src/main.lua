@@ -16,7 +16,6 @@
     local TILE_HEIGHT      = 16
     local GRAVITY          = 1.5
     local MAX_ACCELERATION = 10
-    local WORLD            = bump.newWorld(8)
 
     --- Player
     local PLAYER_SPRITE      = love.graphics.newImage('assets/gripe/gripe.png')
@@ -24,10 +23,12 @@
     local PLAYER_SPEED       = 100
     local PLAYER_JUMP_AMOUNT = 4
     local PLAYER_LIVES       = 3
+    local PLAYER_SCORE       = 0
+    local PLAYER_LEVEL       = 1
 
     --- Spikes
-    local SPIKES      = {}
-    local SPIKE_WIDTH = 16
+    local SPIKES       = {}
+    local SPIKE_WIDTH  = 16
     local SPIKE_HEIGHT = 16
 
     --- Goal
@@ -38,6 +39,9 @@
     local COIN_WIDTH  = 16
     local COIN_HEIGHT = 16
     local COINS       = {}
+
+    --- GUI
+    local FONT = {}
 
     --- Animations
 
@@ -76,6 +80,8 @@
 
     --- Loads a map from specified file
     function loadTileMap(path)
+        --- Initialize world
+        WORLD = bump.newWorld(8)
 
         --- load map
         ALT.Loader.path = path
@@ -107,21 +113,22 @@
 
     --- Spawns every object found in 'characters' layer
     function spawnObjects(map)
+        COINS  = {}
         spawnBoundaries(map)
 
         for i, obj in pairs( map('characters').objects ) do
             if obj.type == 'player' then spawnPlayer(obj.x, obj.y) end
             if obj.type == 'spike' then spawnSpike(obj.x, obj.y) end
             if obj.type == 'goal' then spawnGoal(obj.x, obj.y) end
-            if obj.type == 'coin' then spawnCoin(obj.x, obj.y) end
+            if obj.type == 'coin' then spawnCoins(obj.x, obj.y) end
         end
     end
 
     --- Adds left, right and top border to world
     function spawnBoundaries()
-        left = { l = -2, t = 0, w = 1, h = map.height * TILE_HEIGHT }
+        left  = { l = -2, t = 0, w = 1, h = map.height * TILE_HEIGHT }
         right = { l = map.width * TILE_WIDTH + 1, t = 0, w = 1, h = map.height * TILE_HEIGHT }
-        top = { l = 0, t = -2, w = map.width * TILE_WIDTH, h = 1 }
+        top   = { l = 0, t = -2, w = map.width * TILE_WIDTH, h = 1 }
 
         WORLD:add(left, left.l, left.t, left.w, left.h)
         WORLD:add(right, right.l, right.t, right.w, right.h)
@@ -143,7 +150,6 @@
             velocity     = 0,
             acceleration = 0,
             direction    = 'right',
-            score        = 0,
             lives        = PLAYER_LIVES
         }
 
@@ -250,7 +256,6 @@
         player.l     = player.startL
         player.t     = player.startT
         player.lives = player.lives - 1
-        player.score = 0
     
         WORLD:update(player, player.l, player.t)
 
@@ -261,7 +266,9 @@
 
     --- Callback function after player loses all of their lives
     function gameOver()
-        print('Game Over')
+        PLAYER_SCORE = 0
+        PLAYER_LEVEL = 1
+        loadTileMap('assets/maps/level_1/')
     end
 
     --- Draws player object 
@@ -273,9 +280,7 @@
 
     --- Adds spikes to World
     function spawnSpike(x, y)
-        local id = #SPIKES + 1
-        
-        SPIKES[id] = {
+        local spike = {
             l = x,
             t = y,
             w = SPIKE_WIDTH / 4,
@@ -283,7 +288,7 @@
             type = 'spike'
         }
 
-        WORLD:add(SPIKES[id], SPIKES[id].l, SPIKES[id].t, SPIKES[id].w, SPIKES[id].h)
+        WORLD:add(spike, spike.l, spike.t, spike.w, spike.h)
     end
 
 --- Goal Functions
@@ -304,7 +309,7 @@
 --- Coin Functions
 
     --- Adds coin object to world
-    function spawnCoin(x, y)
+    function spawnCoins(x, y)
         id = #COINS + 1
         
         COINS[id] = {
@@ -323,7 +328,7 @@
     --- Catches given coin, increases player score and removes coin from world
     function catchCoin(coin)
         coin.caught = true
-        player.score = player.score + 1
+        PLAYER_SCORE = PLAYER_SCORE + 1
         WORLD:remove(coin)
     end
 
@@ -355,11 +360,26 @@
     --- Advances to next level
     function nextLevel()
         if allCoinsCaught() then
-            print('Advance to next level.')
-            die()
+            PLAYER_LEVEL = PLAYER_LEVEL + 1
+            
+            if (PLAYER_LEVEL + 1) % 2 == 0 then
+                print('Load level 1')
+                loadTileMap('assets/maps/level_1/')
+            else
+                print('Load level 2')
+                loadTileMap('assets/maps/level_1/')
+            end
         else
             print('Please collect all coins.')
         end
+    end
+
+    --- Draws heads-up display
+    function drawHUD()
+        love.graphics.setFont(FONT)
+        love.graphics.print('Life: ' .. player.lives, 8, 8)
+        love.graphics.print('Score: ' .. PLAYER_SCORE, 8, 32)
+        love.graphics.print('Level: ' .. PLAYER_LEVEL, 8, 56)
     end
 
 function love.keypressed(k)
@@ -370,6 +390,8 @@ function love.keypressed(k)
 end
 
 function love.load()
+    FONT = love.graphics.newFont(20)
+
     loadTileMap('assets/maps/level_1/')
 end
 
@@ -382,4 +404,5 @@ function love.draw()
     map:draw()
     drawPlayer()
     drawCoins()
+    drawHUD()
 end
