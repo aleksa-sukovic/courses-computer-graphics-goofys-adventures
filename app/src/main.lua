@@ -106,12 +106,25 @@
 
     --- Spawns every object found in 'characters' layer
     function spawnObjects(map)
+        spawnBoundaries(map)
+
         for i, obj in pairs( map('characters').objects ) do
             if obj.type == 'player' then spawnPlayer(obj.x, obj.y) end
             if obj.type == 'spike' then spawnSpike(obj.x, obj.y) end
             if obj.type == 'goal' then spawnGoal(obj.x, obj.y) end
             if obj.type == 'coin' then spawnCoin(obj.x, obj.y) end
         end
+    end
+
+    --- Adds left, right and top border to world
+    function spawnBoundaries()
+        left = { l = -2, t = 0, w = 1, h = map.height * TILE_HEIGHT }
+        right = { l = map.width * TILE_WIDTH + 1, t = 0, w = 1, h = map.height * TILE_HEIGHT }
+        top = { l = 0, t = -2, w = map.width * TILE_WIDTH, h = 1 }
+
+        WORLD:add(left, left.l, left.t, left.w, left.h)
+        WORLD:add(right, right.l, right.t, right.w, right.h)
+        WORLD:add(top, top.l, top.t, top.w, top.h)
     end
 
 --- Player Functions
