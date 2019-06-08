@@ -27,12 +27,11 @@
     local PLAYER_LEVEL       = 1
 
     --- Spikes
-    local SPIKES       = {}
     local SPIKE_WIDTH  = 16
     local SPIKE_HEIGHT = 16
 
     --- Goal
-    local goal = {}
+    local GOAL = {}
 
     --- Coin
     local COIN_SPRITE = love.graphics.newImage('assets/coin/coin.png')
@@ -76,7 +75,7 @@
             coinSpinAnimation = anim8.newAnimation(coinGrid('1-8', 1), 0.1)
 
 
--- Map Functions
+--- Map Functions
 
     --- Loads a map from specified file
     function loadTileMap(path)
@@ -201,6 +200,7 @@
         player.l, player.t, cols, len = WORLD:move(player, player.l + PLAYER_SPEED * dt * dir, player.t)
         player.direction   = direction
 
+        --- handle collisions
         handlePlayerCollisions(cols, len, 'horizontal')
 
         --- return animation
@@ -295,7 +295,7 @@
 
     --- Adds goal object to world
     function spawnGoal(x, y)
-        goal = {
+        GOAL = {
             l = x,
             t = y,
             w = 16,
@@ -303,7 +303,7 @@
             type = 'goal'
         }
 
-        WORLD:add(goal, goal.l, goal.t, goal.w, goal.h)
+        WORLD:add(GOAL, GOAL.l, GOAL.t, GOAL.w, GOAL.h)
     end
 
 --- Coin Functions
@@ -362,15 +362,12 @@
         if allCoinsCaught() then
             PLAYER_LEVEL = PLAYER_LEVEL + 1
             
+            --- Switches between available 2 levels
             if (PLAYER_LEVEL + 1) % 2 == 0 then
-                print('Load level 1')
                 loadTileMap('assets/maps/level_1/')
             else
-                print('Load level 2')
                 loadTileMap('assets/maps/level_1/')
             end
-        else
-            print('Please collect all coins.')
         end
     end
 
@@ -382,27 +379,33 @@
         love.graphics.print('Level: ' .. PLAYER_LEVEL, 8, 56)
     end
 
-function love.keypressed(k)
-    if k == 'w' or k == 'up' then
-        player.velocity = 0
-        player.acceleration = -PLAYER_JUMP_AMOUNT
+--- Love Framework Functions
+
+    --- Handle keypresses
+    function love.keypressed(k)
+        if k == 'w' or k == 'up' then
+            player.velocity = 0
+            player.acceleration = -PLAYER_JUMP_AMOUNT
+        end
     end
-end
 
-function love.load()
-    FONT = love.graphics.newFont(20)
+    --- Load world
+    function love.load()
+        FONT = love.graphics.newFont(20)
 
-    loadTileMap('assets/maps/level_1/')
-end
+        loadTileMap('assets/maps/level_1/')
+    end
 
-function love.update(dt)
-    updatePlayer(dt)
-    updateCoins(dt)
-end
+    --- Update world
+    function love.update(dt)
+        updatePlayer(dt)
+        updateCoins(dt)
+    end
 
-function love.draw()
-    map:draw()
-    drawPlayer()
-    drawCoins()
-    drawHUD()
-end
+    --- Draw world
+    function love.draw()
+        map:draw()
+        drawPlayer()
+        drawCoins()
+        drawHUD()
+    end
