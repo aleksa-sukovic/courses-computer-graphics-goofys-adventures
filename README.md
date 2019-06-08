@@ -36,7 +36,7 @@ This will compile Your game. Executable can be found in `dist/linux/game.out`
 
 ![Level 1](https://api.pcloud.com/getpubthumb?code=XZt1HN7Z36U317nHtwBFFvQU1cA9MRxtXR2y&linkpassword=undefined&size=640x506&crop=0&type=auto)
 
-![Level 2](https://api.pcloud.com/getpubthumb?code=XZA1HN7Z79sNGqcecjhtgRGka0N4eVelmn8y&linkpassword=undefined&size=640x506&crop=0&type=auto)
+![Level 2](https://api.pcloud.com/getpubthumb?code=XZEeHN7Zk0z8ERJBqAXYe8mrT543Vus83I8V&linkpassword=undefined&size=640x506&crop=0&type=auto)
 
 ### Credits
 
