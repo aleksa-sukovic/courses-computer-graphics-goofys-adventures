@@ -3,8 +3,8 @@
  <properties>
   <property name="gravity" value=""/>
  </properties>
- <tileset firstgid="1" source="level_1_tiles.tsx"/>
- <tileset firstgid="241" source="level_1_background.tsx"/>
+ <tileset firstgid="1" source="tiles.tsx"/>
+ <tileset firstgid="241" source="background.tsx"/>
  <tileset firstgid="1441" source="player.tsx"/>
  <layer id="3" name="background" width="40" height="30">
   <data encoding="csv">

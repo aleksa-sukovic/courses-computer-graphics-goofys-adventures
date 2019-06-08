@@ -53,11 +53,11 @@
 -- Map Functions
 
     --- Loads a map from specified file
-    function loadTileMap(path, mapName)
+    function loadTileMap(path)
 
         --- load map
         ALT.Loader.path = path
-        map = ALT.Loader.load(mapName)
+        map = ALT.Loader.load('map.tmx')
         map.drawObjects = false
 
         --- initialize tiles
@@ -197,7 +197,7 @@ function drawPlayer()
 end
 
 function love.load()
-    loadTileMap('assets/maps/level_1/', 'level_1_map.tmx')
+    loadTileMap('assets/maps/level_1/')
 end
 
 function love.update(dt)
