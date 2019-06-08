@@ -40,4 +40,4 @@ This will compile Your game. Executable can be found in `dist/linux/game.out`
 
 ### Credits
 
-Assets for this game were not made by me. All credit goes to [ZiNGOT](http://opengameart.org/content/gfxlib-fuzed).
+Assets for this game were not made by me. All credits goes to [ZiNGOT](http://opengameart.org/content/gfxlib-fuzed).
