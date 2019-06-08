@@ -58,6 +58,7 @@
         --- load map
         ALT.Loader.path = path
         map = ALT.Loader.load(mapName)
+        map.drawObjects = false
 
         --- initialize tiles
         initializeTiles(map)
